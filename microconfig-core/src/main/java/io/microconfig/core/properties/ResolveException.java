@@ -28,7 +28,8 @@ public class ResolveException extends MicroconfigException {
 
     @Override
     public String getMessage() {
-        return rootComponentInfo() + problemInfo();
+//        return rootComponentInfo() + problemInfo();
+        return super.getMessage();
     }
 
     private String problemInfo() {

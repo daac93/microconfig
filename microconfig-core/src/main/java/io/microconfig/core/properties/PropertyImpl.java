@@ -1,5 +1,6 @@
 package io.microconfig.core.properties;
 
+import io.microconfig.core.exceptions.ExceptionAccumulator;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -63,8 +64,12 @@ public class PropertyImpl implements Property {
             return withValue(resolved);
         } catch (ResolveException e) {
             e.setProperty(this);
-            throw e;
+//            ExceptionAcumulator.addExceptionToList(e);
+            ExceptionAccumulator.addException(declaringComponent.getComponent(), e);
+            //throw e;
         }
+
+        return withValue("UNRESOLVED_VALUE_XYZ");
     }
 
     @Override
