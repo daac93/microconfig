@@ -1,6 +1,8 @@
 package io.microconfig;
 
 import io.microconfig.core.MicroconfigRunner;
+import io.microconfig.core.exceptions.ExceptionAccumulator;
+import io.microconfig.core.exceptions.MicroconfigException;
 import io.microconfig.core.properties.Properties;
 import io.microconfig.core.properties.serializers.ConfigResult;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +11,7 @@ import lombok.val;
 import java.io.File;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static io.microconfig.core.properties.serializers.ConfigResult.toJson;
@@ -79,10 +82,16 @@ public class MicroconfigMain {
             if (jsonOutput) {
                 List<ConfigResult> results = properties.save(asConfigResult());
                 System.out.println(toJson(results));
-            } else {
+            } else if (ExceptionAccumulator.hasNoExceptions()){
                 properties.save(runner.toFiles());
             }
-            announce("\nGenerated [" + env + "] configs in " + (NANOSECONDS.toMillis(nanoTime() - startTime)) + "ms");
+
+            if (ExceptionAccumulator.hasNoExceptions()) {
+                announce("\nGenerated [" + env + "] configs in " + (NANOSECONDS.toMillis(nanoTime() - startTime)) + "ms");
+            }   else    {
+                error("\nExceptions generating configs for [" + env + "]\n Please review the exceptions below.\n");
+                printExceptions();
+            }
         });
     }
 
@@ -108,5 +117,20 @@ public class MicroconfigMain {
                 .split("=")[1]
                 .trim();
         info(version);
+    }
+
+    private static void printExceptions()   {
+        for (Map.Entry<String, List<MicroconfigException>> entry : ExceptionAccumulator.getExceptionsMap().entrySet()) {
+            error("Errors generating configs for component [" + entry.getKey() + "]\n");
+
+            for(MicroconfigException exception : entry.getValue()) {
+                error("\t" + exception.getMessage());
+            }
+
+            error(String.format("\n%1$100s", " \n").replace(' ', '*'));
+        }
+
+        ExceptionAccumulator.clearExceptions();
+        throw new RuntimeException("Unable to generate configurations");
     }
 }
